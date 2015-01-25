@@ -210,7 +210,8 @@ void MyFrame::drawArena( wxGraphicsContext* pGC, int scale ) {
     }
 
     pGC->SetFont(*wxNORMAL_FONT,*wxBLACK);
-    pGC->DrawText( wxString::Format("%d",this->iterations), 10, 10 );
+    pGC->DrawText( wxString::Format("Its: %d",this->iterations), 10, 10 );
+    pGC->DrawText( wxString::Format("Groups: %d",this->arena.getNumberOfGroups()), 10, 30 );
 }
 
 //-------------------------------------------------------------------------------------
@@ -236,5 +237,6 @@ void MyFrame::OnIdle(wxIdleEvent& event) {
 void MyFrame::OnStep(wxCommandEvent& WXUNUSED(event)) {
     this->arena.update();
     this->iterations++;
+    this->render_every = 0;
     this->Refresh(false);
 }

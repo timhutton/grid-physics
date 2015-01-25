@@ -27,6 +27,8 @@ class Arena {
 	
         size_t getNumberOfBonds() const { return this->bonds.size(); }
         Bond getBond( size_t i ) const { return this->bonds[i]; }
+
+        size_t getNumberOfGroups() const { return this->groups.size(); }
 	
 	private:
 
