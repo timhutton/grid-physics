@@ -7,9 +7,8 @@ class Arena {
 
 	public:
         
-        struct Atom { int x, y; };
+        struct Atom { int x, y; vector<size_t> bonded_atoms; };
         enum BondType { Moore, vonNeumann };
-        struct Bond { BondType type; size_t a, b; };
 
         Arena( int x, int y );
 
@@ -25,25 +24,23 @@ class Arena {
         size_t getNumberOfAtoms() const { return this->atoms.size(); }
         Atom getAtom( size_t i ) const { return this->atoms[i]; }
 	
-        size_t getNumberOfBonds() const { return this->bonds.size(); }
-        Bond getBond( size_t i ) const { return this->bonds[i]; }
-
         size_t getNumberOfGroups() const { return this->groups.size(); }
 	
 	private:
 
         struct Group { vector<size_t> atoms; };
-        struct Slot { bool has_atom; Slot() : has_atom( false ) {} };
+        struct Slot { bool has_atom; size_t iAtom; Slot() : has_atom( false ) {} };
 
         int X;
         int Y;
 		vector<Group>        groups;
-        vector<Bond>         bonds;
 		vector<Atom>         atoms;
         vector<vector<Slot>> grid;
 
         void addFlexibleBond( size_t a, size_t b );
         static bool isWithinFlexibleBondNeighborhood( int x1, int y1, int x2, int y2 );
+        void moveGroupRandomly( const Group& group );
+        void doChemistry();
 
         class GroupHasOneButNotTheOther {
             public:

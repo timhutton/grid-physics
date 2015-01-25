@@ -126,7 +126,7 @@ void MyFrame::seed() {
         arena.makeBond( n, o, Arena::BondType::Moore );
     }
     
-    for( int i = 0; i < 100; ++i ) {
+    for( int i = 0; i < 300; ++i ) {
         int x = rand() % this->arena.getArenaWidth();
         int y = rand() % this->arena.getArenaHeight();
         if( !this->arena.hasAtom( x, y ) )
@@ -190,6 +190,7 @@ void MyFrame::draw( wxGraphicsContext *pGC, int X, int Y ) {
 
 void MyFrame::drawArena( wxGraphicsContext* pGC, int scale ) {
 
+    // draw atoms
     pGC->SetPen(*wxMEDIUM_GREY_PEN);
     pGC->SetBrush(*wxLIGHT_GREY_BRUSH);
     for( size_t iAtom = 0; iAtom < this->arena.getNumberOfAtoms(); ++iAtom ) {
@@ -197,16 +198,15 @@ void MyFrame::drawArena( wxGraphicsContext* pGC, int scale ) {
         pGC->DrawRectangle( a.x * scale, a.y * scale, scale, scale );
     }
 
-    for( size_t iBond = 0; iBond < this->arena.getNumberOfBonds(); ++iBond) {
-        Arena::Bond bond = this->arena.getBond( iBond );
-        Arena::Atom a,b;
-        a = this->arena.getAtom( bond.a );
-        b = this->arena.getAtom( bond.b );
-        switch( bond.type ) {
-            case Arena::BondType::vonNeumann:  pGC->SetPen(*wxBLUE_PEN);       break;
-            case Arena::BondType::Moore:       pGC->SetPen(*wxMEDIUM_GREY_PEN); break;
+    // draw bonds
+    pGC->SetPen(*wxBLACK_PEN);
+    for( size_t iAtom = 0; iAtom < this->arena.getNumberOfAtoms(); ++iAtom ) {
+        Arena::Atom a = this->arena.getAtom( iAtom );
+        for( const size_t& iAtom2 : a.bonded_atoms ) {
+            if( iAtom2 < iAtom ) continue; 
+            Arena::Atom b = this->arena.getAtom( iAtom2 );
+            pGC->StrokeLine( ( a.x + 0.5 ) * scale, ( a.y + 0.5 ) * scale, ( b.x + 0.5 ) * scale, ( b.y + 0.5 ) * scale );
         }
-        pGC->StrokeLine( ( a.x + 0.5 ) * scale, ( a.y + 0.5 ) * scale, ( b.x + 0.5 ) * scale, ( b.y + 0.5 ) * scale );
     }
 
     pGC->SetFont(*wxNORMAL_FONT,*wxBLACK);
