@@ -139,7 +139,7 @@ void Arena::update() {
         moveGroupRandomly( group );
     }
     // find chemical reactions
-    //doChemistry();
+    doChemistry();
 }
 
 void Arena::doChemistry() {
@@ -155,8 +155,8 @@ void Arena::doChemistry() {
                 Atom& a = this->atoms[ iAtomA ];
                 Atom& b = this->atoms[ iAtomB ];
                 bool is_bonded = find( begin(a.bonded_atoms),end(a.bonded_atoms),iAtomB ) != end(a.bonded_atoms);
-                if( !is_bonded && a.type == b.type ) {
-                    makeBond( iAtomA, iAtomB, BondType::vonNeumann );
+                if( !is_bonded && a.type == b.type && a.bonded_atoms.size() + b.bonded_atoms.size() < 2 ) {
+                    makeBond( iAtomA, iAtomB, BondType::Moore );
                 }
             }
         }
