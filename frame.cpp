@@ -18,7 +18,7 @@ MyFrame::MyFrame(const wxString& title)
        : wxFrame(NULL, wxID_ANY, title)
        , arena( 50, 50 )
        , iterations( 0 )
-       , render_every( 100 )
+       , render_every( 1 )
 {
     SetIcon(wxICON(sample));
 
