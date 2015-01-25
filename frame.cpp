@@ -75,14 +75,14 @@ void MyFrame::seed() {
 
     // an 8-cell loop with some rigid sections
     {
-        size_t a = arena.addAtom( 1, 1 );
-        size_t b = arena.addAtom( 2, 1 );
-        size_t c = arena.addAtom( 2, 2 );
-        size_t d = arena.addAtom( 1, 2 );
-        size_t e = arena.addAtom( 1, 3 );
-        size_t f = arena.addAtom( 0, 3 );
-        size_t g = arena.addAtom( 0, 2 );
-        size_t h = arena.addAtom( 0, 1 );
+        size_t a = arena.addAtom( 1, 1, 0 );
+        size_t b = arena.addAtom( 2, 1, 0 );
+        size_t c = arena.addAtom( 2, 2, 0 );
+        size_t d = arena.addAtom( 1, 2, 0 );
+        size_t e = arena.addAtom( 1, 3, 0 );
+        size_t f = arena.addAtom( 0, 3, 0 );
+        size_t g = arena.addAtom( 0, 2, 0 );
+        size_t h = arena.addAtom( 0, 1, 0 );
         arena.makeBond( a, b, Arena::BondType::vonNeumann );
         arena.makeBond( b, c, Arena::BondType::vonNeumann );
         arena.makeBond( c, d, Arena::BondType::Moore );
@@ -95,21 +95,21 @@ void MyFrame::seed() {
     
     // a box with flailing arms
     {
-        size_t a = arena.addAtom( 10, 10 );
-        size_t b = arena.addAtom( 11, 10 );
-        size_t c = arena.addAtom( 12, 10 );
-        size_t d = arena.addAtom( 12, 11 );
-        size_t e = arena.addAtom( 11, 11 );
-        size_t f = arena.addAtom( 10, 11 );
-        size_t g = arena.addAtom( 10, 12 );
-        size_t h = arena.addAtom( 11, 12 );
-        size_t i = arena.addAtom( 12, 12 );
-        size_t j = arena.addAtom( 9, 9 );
-        size_t k = arena.addAtom( 8, 8 );
-        size_t l = arena.addAtom( 7, 7 );
-        size_t m = arena.addAtom( 11, 9 );
-        size_t n = arena.addAtom( 12, 8 );
-        size_t o = arena.addAtom( 13, 7 );
+        size_t a = arena.addAtom( 10, 10, 1 );
+        size_t b = arena.addAtom( 11, 10, 1 );
+        size_t c = arena.addAtom( 12, 10, 1 );
+        size_t d = arena.addAtom( 12, 11, 1 );
+        size_t e = arena.addAtom( 11, 11, 1 );
+        size_t f = arena.addAtom( 10, 11, 1 );
+        size_t g = arena.addAtom( 10, 12, 1 );
+        size_t h = arena.addAtom( 11, 12, 1 );
+        size_t i = arena.addAtom( 12, 12, 1 );
+        size_t j = arena.addAtom( 9, 9, 1 );
+        size_t k = arena.addAtom( 8, 8, 1 );
+        size_t l = arena.addAtom( 7, 7, 1 );
+        size_t m = arena.addAtom( 11, 9, 1 );
+        size_t n = arena.addAtom( 12, 8, 1 );
+        size_t o = arena.addAtom( 13, 7, 1 );
         arena.makeBond( a, b, Arena::BondType::vonNeumann );
         arena.makeBond( b, c, Arena::BondType::vonNeumann );
         arena.makeBond( c, d, Arena::BondType::vonNeumann );
@@ -130,7 +130,7 @@ void MyFrame::seed() {
         int x = rand() % this->arena.getArenaWidth();
         int y = rand() % this->arena.getArenaHeight();
         if( !this->arena.hasAtom( x, y ) )
-            this->arena.addAtom( x, y );
+            this->arena.addAtom( x, y, rand() % 6 );
     }
 }
 
@@ -195,6 +195,15 @@ void MyFrame::drawArena( wxGraphicsContext* pGC, int scale ) {
     pGC->SetBrush(*wxLIGHT_GREY_BRUSH);
     for( size_t iAtom = 0; iAtom < this->arena.getNumberOfAtoms(); ++iAtom ) {
         Arena::Atom a = this->arena.getAtom( iAtom );
+        /*switch( a.type ) {
+            default:
+            case 0: pGC->SetBrush(*wxRED_BRUSH); break;
+            case 1: pGC->SetBrush(*wxYELLOW_BRUSH); break;
+            case 2: pGC->SetBrush(*wxCYAN_BRUSH); break;
+            case 3: pGC->SetBrush(*wxLIGHT_GREY_BRUSH); break;
+            case 4: pGC->SetBrush(*wxBLUE_BRUSH); break;
+            case 5: pGC->SetBrush(*wxGREEN_BRUSH); break;
+        }*/
         pGC->DrawRectangle( a.x * scale, a.y * scale, scale, scale );
     }
 

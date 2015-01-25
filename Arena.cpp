@@ -39,7 +39,7 @@ bool Arena::hasAtom( int x, int y ) const {
     
 //----------------------------------------------------------------------------
 
-size_t Arena::addAtom( int x, int y ) {
+size_t Arena::addAtom( int x, int y, int type) {
 
     if( isOffGrid(x,y ) )
 		throw out_of_range("Atom not on grid");
@@ -51,6 +51,7 @@ size_t Arena::addAtom( int x, int y ) {
 	Atom a;
 	a.x = x;
 	a.y = y;
+    a.type = type;
 	this->atoms.push_back( a );
 	size_t iAtom = this->atoms.size()-1;
 
@@ -154,7 +155,7 @@ void Arena::doChemistry() {
                 Atom& a = this->atoms[ iAtomA ];
                 Atom& b = this->atoms[ iAtomB ];
                 bool is_bonded = find( begin(a.bonded_atoms),end(a.bonded_atoms),iAtomB ) != end(a.bonded_atoms);
-                if( !is_bonded ) {
+                if( !is_bonded && a.type == b.type ) {
                     makeBond( iAtomA, iAtomB, BondType::vonNeumann );
                 }
             }

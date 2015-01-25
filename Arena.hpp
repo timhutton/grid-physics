@@ -7,16 +7,17 @@ class Arena {
 
 	public:
         
-        struct Atom { int x, y; vector<size_t> bonded_atoms; };
+        struct Atom { int x, y; int type; vector<size_t> bonded_atoms; };
         enum BondType { Moore, vonNeumann };
 
         Arena( int x, int y );
 
-        bool isOffGrid( int x, int y ) const;
-        bool hasAtom( int x, int y ) const;
-		size_t addAtom( int x, int y );
+		size_t addAtom( int x, int y, int type );
 		void makeBond( size_t a, size_t b, BondType bond_type );
         void update();
+
+        bool isOffGrid( int x, int y ) const;
+        bool hasAtom( int x, int y ) const;
 
         int getArenaWidth() const { return this->X; }
         int getArenaHeight() const { return this->Y; }
@@ -38,7 +39,6 @@ class Arena {
         vector<vector<Slot>> grid;
 
         void addFlexibleBond( size_t a, size_t b );
-        static bool isWithinFlexibleBondNeighborhood( int x1, int y1, int x2, int y2 );
         void moveGroupRandomly( const Group& group );
         void doChemistry();
 
@@ -58,4 +58,5 @@ class Arena {
 
         static const int vNx[4];
         static const int vNy[4];
+        static bool isWithinFlexibleBondNeighborhood( int x1, int y1, int x2, int y2 );
 };
