@@ -74,8 +74,27 @@ MyFrame::MyFrame(const wxString& title)
 void MyFrame::seed() {
 
     try {
+
+        // a loop of N*2
+        if( 0 ) {
+            const int N = 10;
+            arena.addAtom( 0, 0, 0 );
+            size_t a;
+            for( int i = 1; i < N; i++ )
+            {
+                a = arena.addAtom(i,0,0);
+                arena.makeBond(a,a-1,Arena::BondType::Moore);
+            }
+            for( int i = N-1; i >=0; i-- )
+            {
+                a = arena.addAtom(i,1,0);
+                arena.makeBond(a,a-1,Arena::BondType::Moore);
+            }
+            arena.makeBond(a,0,Arena::BondType::Moore);
+        }
+
         // an 8-cell loop with some rigid sections
-        {
+        if( 1 ) {
             size_t a = arena.addAtom( 1, 1, 0 );
             size_t b = arena.addAtom( 2, 1, 0 );
             size_t c = arena.addAtom( 2, 2, 0 );
@@ -93,9 +112,9 @@ void MyFrame::seed() {
             arena.makeBond( g, h, Arena::BondType::vonNeumann );
             arena.makeBond( h, a, Arena::BondType::Moore );
         }
-    
+
         // a box with flailing arms
-        {
+        if( 1 ) {
             size_t a = arena.addAtom( 10, 10, 1 );
             size_t b = arena.addAtom( 11, 10, 1 );
             size_t c = arena.addAtom( 12, 10, 1 );
@@ -128,35 +147,20 @@ void MyFrame::seed() {
         }
 
         // a double-stranded molecule
-        {
-            size_t a = arena.addAtom( 21, 21, 5 );
-            size_t b = arena.addAtom( 22, 21, 3 );
-            size_t c = arena.addAtom( 21, 22, 5 );
-            size_t d = arena.addAtom( 22, 22, 3 );
-            size_t e = arena.addAtom( 21, 23, 5 );
-            size_t f = arena.addAtom( 22, 23, 3 );
-            size_t g = arena.addAtom( 21, 24, 5 );
-            size_t h = arena.addAtom( 22, 24, 3 );
-            size_t i = arena.addAtom( 21, 25, 5 );
-            size_t j = arena.addAtom( 22, 25, 3 );
-            size_t k = arena.addAtom( 21, 26, 5 );
-            size_t l = arena.addAtom( 22, 26, 3 );
+        if( 0 ) {
+            const int N = 8;
+            size_t a = arena.addAtom( 11, 0, 5 );
+            size_t b = arena.addAtom( 12, 0, 3 );
             arena.makeBond( a, b, Arena::BondType::Moore );
-            arena.makeBond( c, d, Arena::BondType::Moore );
-            arena.makeBond( e, f, Arena::BondType::Moore );
-            arena.makeBond( g, h, Arena::BondType::Moore );
-            arena.makeBond( i, j, Arena::BondType::Moore );
-            arena.makeBond( k, l, Arena::BondType::Moore );
-            arena.makeBond( a, c, Arena::BondType::Moore );
-            arena.makeBond( b, d, Arena::BondType::Moore );
-            arena.makeBond( c, e, Arena::BondType::Moore );
-            arena.makeBond( d, f, Arena::BondType::Moore );
-            arena.makeBond( e, g, Arena::BondType::Moore );
-            arena.makeBond( f, h, Arena::BondType::Moore );
-            arena.makeBond( g, i, Arena::BondType::Moore );
-            arena.makeBond( h, j, Arena::BondType::Moore );
-            arena.makeBond( i, k, Arena::BondType::Moore );
-            arena.makeBond( j, l, Arena::BondType::Moore );
+            for( int i = 1; i < N; ++i ) {
+                size_t a2 = arena.addAtom( 11, i, 5 );
+                size_t b2 = arena.addAtom( 12, i, 3 );
+                arena.makeBond( a2, b2, Arena::BondType::Moore );
+                arena.makeBond( a, a2, Arena::BondType::Moore );
+                arena.makeBond( b, b2, Arena::BondType::Moore );
+                a = a2;
+                b = b2;
+            }
         }
     
         for( int i = 0; i < 500; ++i ) {
@@ -169,6 +173,8 @@ void MyFrame::seed() {
     catch( exception& e ) {
         wxMessageBox( e.what() );
     }
+
+    this->arena.makeGroups( Arena::FlexibilityMethod::AllGroups );
 }
 
 //-------------------------------------------------------------------------------------
@@ -244,10 +250,16 @@ void MyFrame::drawArena( wxGraphicsContext* pGC, int scale ) {
         pGC->DrawRectangle( a.x * scale, a.y * scale, scale, scale );
     }
 
-    // draw bonds
-    pGC->SetPen(*wxBLACK_PEN);
+    // draw the bonds
     for( size_t iAtom = 0; iAtom < this->arena.getNumberOfAtoms(); ++iAtom ) {
         Arena::Atom a = this->arena.getAtom( iAtom );
+        pGC->SetPen(*wxBLACK_PEN);
+        for( const size_t& iAtom2 : a.rigid_bonded_atoms ) {
+            if( iAtom2 < iAtom ) continue; 
+            Arena::Atom b = this->arena.getAtom( iAtom2 );
+            pGC->StrokeLine( ( a.x + 0.5 ) * scale, ( a.y + 0.5 ) * scale, ( b.x + 0.5 ) * scale, ( b.y + 0.5 ) * scale );
+        }
+        pGC->SetPen(*wxMEDIUM_GREY_PEN);
         for( const size_t& iAtom2 : a.bonded_atoms ) {
             if( iAtom2 < iAtom ) continue; 
             Arena::Atom b = this->arena.getAtom( iAtom2 );
@@ -257,7 +269,8 @@ void MyFrame::drawArena( wxGraphicsContext* pGC, int scale ) {
 
     pGC->SetFont(*wxNORMAL_FONT,*wxBLACK);
     pGC->DrawText( wxString::Format("Its: %d",this->iterations), 10, 10 );
-    pGC->DrawText( wxString::Format("Groups: %d",this->arena.getNumberOfGroups()), 10, 30 );
+    pGC->DrawText( wxString::Format("Atoms: %d",this->arena.getNumberOfAtoms()), 10, 30 );
+    pGC->DrawText( wxString::Format("Groups: %d",this->arena.getNumberOfGroups()), 10, 50 );
 }
 
 //-------------------------------------------------------------------------------------
