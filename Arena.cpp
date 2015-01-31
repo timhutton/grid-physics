@@ -4,22 +4,21 @@
 // STL:
 #include <stdexcept>
 #include <algorithm>
-
-int randInt( int n )  // [0,n)
-{
-    return rand() % n; // use something more uniform if needed
-}
+using namespace std;
 
 //----------------------------------------------------------------------------
 
 const int Arena::vNx[4] = { 0, 1, 0, -1 }; // NESW
 const int Arena::vNy[4] = { -1, 0, 1, 0 };
 
+//----------------------------------------------------------------------------
+
 Arena::Arena(int x, int y)
     : X( x )
 	, Y( y )
+    , movement_type( MovementType::JustAtoms )
 {
-	this->grid = vector<vector<Slot>>(X,vector<Slot>(Y));
+	this->grid = vector<vector<Slot>>( X, vector<Slot>( Y ) );
 }
 
 //----------------------------------------------------------------------------
@@ -79,17 +78,17 @@ void Arena::makeBond( size_t a, size_t b, BondType type ) {
 
     this->atoms[ a ].bonded_atoms.push_back( b );
     this->atoms[ b ].bonded_atoms.push_back( a );
-	addFlexibleBond( a, b );
-    if( type == BondType::vonNeumann ) {
-		// remove any group that contains exactly one of a and b (can't have one without the other if a rigid bond)
-		this->groups.erase( remove_if( begin( this->groups ), end( this->groups ), 
-            GroupHasOneButNotTheOther( a, b ) ), end( this->groups ) );
-    }
+
+    if( this->movement_type == MovementType::AllGroups )
+	    addAllGroupsForFlexibleBond( a, b );
+
+    if( type == BondType::vonNeumann )
+        removeGroupsWithOneButNotTheOther( a, b );
 }
 
 //----------------------------------------------------------------------------
 
-void Arena::addFlexibleBond( size_t a, size_t b ) {
+void Arena::addAllGroupsForFlexibleBond( size_t a, size_t b ) {
 	// add new groups obtained by combining pairwise every group that includes a but not b 
     // with every group that includes b but not a
 	vector<Group> new_groups;
@@ -123,6 +122,28 @@ void Arena::addFlexibleBond( size_t a, size_t b ) {
         }
     }
 	this->groups.insert( this->groups.end(), new_groups.begin(), new_groups.end() );
+}
+
+//----------------------------------------------------------------------------
+
+void Arena::removeGroupsWithOneButNotTheOther( size_t a, size_t b ) {
+
+    class GroupHasOneButNotTheOther {
+        public:
+            GroupHasOneButNotTheOther( size_t a, size_t b ) : a(a), b(b) {}
+            bool operator() (const Group& g) const
+            { 
+                int n = 0;
+                if( find( begin(g.atoms), end(g.atoms), a) != end(g.atoms) ) n++;
+                if( find( begin(g.atoms), end(g.atoms), b) != end(g.atoms) ) n++;
+                return n == 1;
+            }
+        private:
+            size_t a,b;
+    };
+
+    this->groups.erase( remove_if( begin( this->groups ), end( this->groups ), 
+        GroupHasOneButNotTheOther( a, b ) ), end( this->groups ) );
 }
 
 //----------------------------------------------------------------------------
@@ -166,7 +187,7 @@ void Arena::doChemistry() {
 //----------------------------------------------------------------------------
 
 void Arena::moveGroupRandomly( const Group& group ) {
-    int iMove = randInt( 4 );
+    int iMove = getRandInt( 4 );
     int dx = vNx[ iMove ];
     int dy = vNy[ iMove ];
     // first test: would this move stretch any bond too far?
@@ -214,3 +235,9 @@ void Arena::moveGroupRandomly( const Group& group ) {
 
 //----------------------------------------------------------------------------
 
+int Arena::getRandInt( int n )  // [0,n)
+{
+    return rand() % n; // use something more uniform if needed
+}
+
+//----------------------------------------------------------------------------

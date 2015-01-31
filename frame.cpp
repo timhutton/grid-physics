@@ -4,6 +4,9 @@
 // wxWidgets:
 #include <wx/dcbuffer.h>
 
+// STL:
+using namespace std;
+
 namespace ID
 {
     enum
@@ -75,7 +78,7 @@ void MyFrame::seed() {
 
     try {
         // an 8-cell loop with some rigid sections
-        {
+        if( 1 ) {
             size_t a = arena.addAtom( 1, 1, 0 );
             size_t b = arena.addAtom( 2, 1, 0 );
             size_t c = arena.addAtom( 2, 2, 0 );
@@ -95,7 +98,7 @@ void MyFrame::seed() {
         }
     
         // a box with flailing arms
-        {
+        if( 1 ) {
             size_t a = arena.addAtom( 10, 10, 1 );
             size_t b = arena.addAtom( 11, 10, 1 );
             size_t c = arena.addAtom( 12, 10, 1 );
@@ -128,7 +131,7 @@ void MyFrame::seed() {
         }
 
         // a double-stranded molecule
-        {
+        if( 1 ) {
             size_t a = arena.addAtom( 21, 21, 5 );
             size_t b = arena.addAtom( 22, 21, 3 );
             size_t c = arena.addAtom( 21, 22, 5 );
@@ -159,11 +162,13 @@ void MyFrame::seed() {
             arena.makeBond( j, l, Arena::BondType::Moore );
         }
     
-        for( int i = 0; i < 500; ++i ) {
-            int x = rand() % this->arena.getArenaWidth();
-            int y = rand() % this->arena.getArenaHeight();
-            if( !this->arena.hasAtom( x, y ) )
-                this->arena.addAtom( x, y, rand() % 6 );
+        if( 1 ) {
+            for( int i = 0; i < 500; ++i ) {
+                int x = rand() % this->arena.getArenaWidth();
+                int y = rand() % this->arena.getArenaHeight();
+                if( !this->arena.hasAtom( x, y ) )
+                    this->arena.addAtom( x, y, rand() % 6 );
+            }
         }
     }
     catch( exception& e ) {
