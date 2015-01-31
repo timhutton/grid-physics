@@ -74,7 +74,7 @@ void Arena::makeBond( size_t a, size_t b, BondType type ) {
 		throw out_of_range("Invalid atom index");
 	if( a == b )
 		throw invalid_argument("Cannot bond atom to itself");
-    if( !isWithinFlexibleBondNeighborhood( this->atoms[a].x, this->atoms[a].y, this->atoms[b].x, this->atoms[b].y ) )
+    if( !isWithinBondNeighborhood( type, this->atoms[a].x, this->atoms[a].y, this->atoms[b].x, this->atoms[b].y ) )
         throw invalid_argument("Atoms are too far apart to be bonded");
     if( hasBond( a, b ) )
         throw invalid_argument("Atoms are already bonded");
@@ -171,8 +171,12 @@ void Arena::removeGroupsWithOneButNotTheOther( size_t a, size_t b ) {
 
 //----------------------------------------------------------------------------
 
-bool Arena::isWithinFlexibleBondNeighborhood( int x1, int y1, int x2, int y2 ) {
-    return abs( x1 - x2 ) <= 1 && abs( y1 - y2 ) <= 1;
+bool Arena::isWithinBondNeighborhood( BondType type, int x1, int y1, int x2, int y2 ) {
+    switch( type ) {
+        case Moore:      return abs( x1 - x2 ) <= 1 && abs( y1 - y2 ) <= 1;
+        case vonNeumann: return abs( x1 - x2 ) + abs( y1 - y2 ) <= 1;
+    }
+    throw out_of_range("unexpected enum");
 }
 
 //----------------------------------------------------------------------------
@@ -243,7 +247,7 @@ bool Arena::moveGroupIfPossible( const Group& group, int dx, int dy ) {
             if( b_in_group ) continue; 
             const Atom& atomIn  = this->atoms[ iAtomIn ];
             const Atom& atomOut = this->atoms[ iAtomOut ];
-            if( !isWithinFlexibleBondNeighborhood( atomIn.x + dx, atomIn.y + dy, atomOut.x, atomOut.y ) ) {
+            if( !isWithinBondNeighborhood( bond.type, atomIn.x + dx, atomIn.y + dy, atomOut.x, atomOut.y ) ) {
                 can_move = false;
                 break;
             }
@@ -319,7 +323,7 @@ bool Arena::moveBlockIfPossible( int x, int y, int w, int h, int dx, int dy ) {
                 const Atom& b = this->atoms[ iAtomB ];
                 if( b.x >= left && b.x <= right && b.y >= top && b.y <= bottom )
                     continue; // atom B is also within the block
-                if( !isWithinFlexibleBondNeighborhood( sx + dx, sy + dy, b.x, b.y ) )
+                if( !isWithinBondNeighborhood( bond.type, sx + dx, sy + dy, b.x, b.y ) )
                     return false; // would over-stretch this bond
             }
         }
@@ -410,7 +414,7 @@ bool Arena::moveMembersOfGroupInBlockIfPossible( const Group& group, int x, int 
             if( find( movers.begin(), movers.end(), iAtomB ) != movers.end() )
                 continue; // no problem, since B is also part of the moving set
             const Atom& b = this->atoms[ iAtomB ];
-            if( !isWithinFlexibleBondNeighborhood( a.x + dx, a.y + dy, b.x, b.y ) )
+            if( !isWithinBondNeighborhood( bond.type, a.x + dx, a.y + dy, b.x, b.y ) )
                 return false; // would over-stretch this bond
         }
     }

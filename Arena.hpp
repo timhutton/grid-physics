@@ -60,6 +60,6 @@ class Arena {
         // useful constant values and functions
         static const int vNx[4];
         static const int vNy[4];
-        static bool isWithinFlexibleBondNeighborhood( int x1, int y1, int x2, int y2 );
+        static bool isWithinBondNeighborhood( BondType type, int x1, int y1, int x2, int y2 );
         static int getRandIntInclusive( int a, int b );
 };
