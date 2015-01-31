@@ -28,7 +28,7 @@ public:
     void OnSpeedStop(wxCommandEvent& WXUNUSED(event)) { this->render_every = 0; }
     void OnSpeedSlowest(wxCommandEvent& WXUNUSED(event)) { this->render_every = 1; }
     void OnSpeedMedium(wxCommandEvent& WXUNUSED(event)) { this->render_every = 100; }
-    void OnSpeedFast(wxCommandEvent& WXUNUSED(event)) { this->render_every = 10000; }
+    void OnSpeedFast(wxCommandEvent& WXUNUSED(event)) { this->render_every = 1000; }
     void OnStep(wxCommandEvent& WXUNUSED(event));
 
 private:

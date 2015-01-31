@@ -9,8 +9,9 @@ class Arena {
         Arena( int x, int y );
 
         // public typedefs
-        struct Atom { int x, y; int type; std::vector<size_t> bonded_atoms; };
         enum BondType { Moore, vonNeumann };
+        struct Bond { size_t iAtom; BondType type; };
+        struct Atom { int x, y; int type; std::vector<Bond> bonds; };
 
 		size_t addAtom( int x, int y, int type );
 		void makeBond( size_t a, size_t b, BondType bond_type );
@@ -54,6 +55,7 @@ class Arena {
         void moveBlocksInGroup( const Group& group, int x, int y, int w, int h );
         bool moveMembersOfGroupInBlockIfPossible( const Group& group, int x, int y, int w, int h, int dx, int dy  );
         void doChemistry();
+        bool hasBond( size_t a, size_t b ) const;
 
         // useful constant values and functions
         static const int vNx[4];

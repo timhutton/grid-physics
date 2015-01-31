@@ -76,11 +76,13 @@ void Arena::makeBond( size_t a, size_t b, BondType type ) {
 		throw invalid_argument("Cannot bond atom to itself");
     if( !isWithinFlexibleBondNeighborhood( this->atoms[a].x, this->atoms[a].y, this->atoms[b].x, this->atoms[b].y ) )
         throw invalid_argument("Atoms are too far apart to be bonded");
-    if( find( begin( this->atoms[ a ].bonded_atoms ), end( this->atoms[ a ].bonded_atoms ), b ) != end( this->atoms[ a ].bonded_atoms ) )
+    if( hasBond( a, b ) )
         throw invalid_argument("Atoms are already bonded");
 
-    this->atoms[ a ].bonded_atoms.push_back( b );
-    this->atoms[ b ].bonded_atoms.push_back( a );
+    Bond ab = { b, type };
+    this->atoms[ a ].bonds.push_back( ab );
+    Bond ba = { a, type };
+    this->atoms[ b ].bonds.push_back( ba );
 
     switch( this->movement_type ) {
         case JustAtoms:
@@ -221,8 +223,7 @@ void Arena::doChemistry() {
                 size_t iAtomB = this->grid[tx][ty].iAtom;
                 Atom& a = this->atoms[ iAtomA ];
                 Atom& b = this->atoms[ iAtomB ];
-                bool is_bonded = find( begin(a.bonded_atoms),end(a.bonded_atoms),iAtomB ) != end(a.bonded_atoms);
-                if( !is_bonded && a.type == b.type && a.bonded_atoms.size() + b.bonded_atoms.size() < 2 ) {
+                if( !hasBond(iAtomA,iAtomB) && a.type == b.type && a.bonds.size() + b.bonds.size() < 2 ) {
                     makeBond( iAtomA, iAtomB, BondType::Moore );
                 }
             }
@@ -236,7 +237,8 @@ bool Arena::moveGroupIfPossible( const Group& group, int dx, int dy ) {
     // first test: would this move stretch any bond too far?
     bool can_move = true;
     for( const size_t& iAtomIn : group.atoms ) {
-        for( const size_t& iAtomOut : this->atoms[ iAtomIn ].bonded_atoms ) {
+        for( const Bond& bond : this->atoms[ iAtomIn ].bonds ) {
+            const size_t& iAtomOut = bond.iAtom;
             bool b_in_group = find( begin( group.atoms ), end( group.atoms ), iAtomOut ) != end( group.atoms );
             if( b_in_group ) continue; 
             const Atom& atomIn  = this->atoms[ iAtomIn ];
@@ -312,7 +314,8 @@ bool Arena::moveBlockIfPossible( int x, int y, int w, int h, int dx, int dy ) {
             if( !this->grid[sx][sy].has_atom )
                 continue;
             const Atom& a = this->atoms[ this->grid[sx][sy].iAtom ];
-            for( const size_t iAtomB : a.bonded_atoms ) {
+            for( const Bond& bond : a.bonds ) {
+                const size_t iAtomB = bond.iAtom;
                 const Atom& b = this->atoms[ iAtomB ];
                 if( b.x >= left && b.x <= right && b.y >= top && b.y <= bottom )
                     continue; // atom B is also within the block
@@ -402,7 +405,8 @@ bool Arena::moveMembersOfGroupInBlockIfPossible( const Group& group, int x, int 
     // bond check
     for( const size_t& iAtom : movers ) {
         const Atom& a = this->atoms[ iAtom ];
-        for( const size_t iAtomB : a.bonded_atoms ) {
+        for( const Bond& bond : a.bonds ) {
+            const size_t iAtomB = bond.iAtom;
             if( find( movers.begin(), movers.end(), iAtomB ) != movers.end() )
                 continue; // no problem, since B is also part of the moving set
             const Atom& b = this->atoms[ iAtomB ];
@@ -475,3 +479,12 @@ void Arena::combineGroupsInvolvingTheseIntoOne( size_t a, size_t b ) {
 
 //----------------------------------------------------------------------------
 
+bool Arena::hasBond( size_t a, size_t b ) const {
+    for( const Bond& bond : this->atoms[ a ].bonds ) {
+        if( bond.iAtom == b )
+            return true;
+    }
+    return false;
+}
+
+//----------------------------------------------------------------------------

@@ -251,12 +251,18 @@ void MyFrame::drawArena( wxGraphicsContext* pGC, int scale ) {
     }
 
     // draw bonds
-    pGC->SetPen(*wxBLACK_PEN);
+    wxPen thinBondPen(*wxBLACK,1);
+    wxPen thickBondPen(*wxBLACK,2);
     for( size_t iAtom = 0; iAtom < this->arena.getNumberOfAtoms(); ++iAtom ) {
         Arena::Atom a = this->arena.getAtom( iAtom );
-        for( const size_t& iAtom2 : a.bonded_atoms ) {
+        for( const Arena::Bond& bond : a.bonds ) {
+            const size_t iAtom2 = bond.iAtom;
             if( iAtom2 < iAtom ) continue; 
             Arena::Atom b = this->arena.getAtom( iAtom2 );
+            switch( bond.type ) {
+                case Arena::BondType::Moore:      pGC->SetPen(thinBondPen);  break;
+                case Arena::BondType::vonNeumann: pGC->SetPen(thickBondPen); break;
+            }
             pGC->StrokeLine( ( a.x + 0.5 ) * scale, ( a.y + 0.5 ) * scale, ( b.x + 0.5 ) * scale, ( b.y + 0.5 ) * scale );
         }
     }
