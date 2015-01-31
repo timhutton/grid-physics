@@ -163,6 +163,7 @@ void MyFrame::seed() {
         }
     
         if( 1 ) {
+            // add some surrounding atoms
             for( int i = 0; i < 500; ++i ) {
                 int x = rand() % this->arena.getArenaWidth();
                 int y = rand() % this->arena.getArenaHeight();

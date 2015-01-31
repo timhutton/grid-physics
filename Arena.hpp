@@ -39,16 +39,20 @@ class Arena {
         // private variables
         const int                         X;
         const int                         Y;
-		std::vector<Group>                groups;
 		std::vector<Atom>                 atoms;
         std::vector<std::vector<Slot>>    grid;
+		std::vector<Group>                groups;
         const MovementType                movement_type;
 
         // private functions
         void addAllGroupsForNewBond( size_t a, size_t b );
         void removeGroupsWithOneButNotTheOther( size_t a, size_t b );
+        void combineGroupsInvolvingTheseIntoOne( size_t a, size_t b );
         bool moveGroupIfPossible( const Group& group, int dx, int dy );
         bool moveBlockIfPossible( int x, int y, int w, int h, int dx, int dy );
+        void moveBlocksInGroup( const Group& group );
+        void moveBlocksInGroup( const Group& group, int x, int y, int w, int h );
+        bool moveMembersOfGroupInBlockIfPossible( const Group& group, int x, int y, int w, int h, int dx, int dy  );
         void doChemistry();
 
         // useful constant values and functions

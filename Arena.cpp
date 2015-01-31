@@ -1,6 +1,9 @@
 // local:
 #include "Arena.hpp"
 
+// stdlib
+#include <limits.h>
+
 // STL:
 #include <stdexcept>
 #include <algorithm>
@@ -16,7 +19,7 @@ const int Arena::vNy[4] = { -1, 0, 1, 0 };
 Arena::Arena(int x, int y)
     : X( x )
 	, Y( y )
-    , movement_type( MovementType::AllGroups )
+    , movement_type( MovementType::MPEGSpace )
 {
 	this->grid = vector<vector<Slot>>( X, vector<Slot>( Y ) );
 }
@@ -79,11 +82,29 @@ void Arena::makeBond( size_t a, size_t b, BondType type ) {
     this->atoms[ a ].bonded_atoms.push_back( b );
     this->atoms[ b ].bonded_atoms.push_back( a );
 
-    if( this->movement_type == MovementType::AllGroups )
-	    addAllGroupsForNewBond( a, b );
-
-    if( type == BondType::vonNeumann )
-        removeGroupsWithOneButNotTheOther( a, b );
+    switch( this->movement_type ) {
+        case JustAtoms:
+            // here we can never move atoms with von Neumann bonds so
+            // we can remove any groups with them in
+            if( type == BondType::vonNeumann )
+                removeGroupsWithOneButNotTheOther( a, b );
+            break;
+        case AllGroups:
+            //  we need to find all the subgraphs created by this new bond
+            if( this->movement_type == MovementType::AllGroups )
+	            addAllGroupsForNewBond( a, b );
+            // if a and b are rigidly bonded then we don't need to check their groups separately
+            if( type == BondType::vonNeumann )
+                removeGroupsWithOneButNotTheOther( a, b );
+            break;
+        case MPEGSpace: 
+            // we don't use groups for this method
+            break;
+        case MPEGMolecules: 
+            // here each molecule is a single group
+            combineGroupsInvolvingTheseIntoOne( a, b );
+            break;
+    }
 }
 
 //----------------------------------------------------------------------------
@@ -165,22 +186,27 @@ void Arena::update() {
             }
             break;
         case MPEGSpace: {
-            // attempt to move a block
-            int x = getRandIntInclusive( 0, this->X-1 );
-            int y = getRandIntInclusive( 0, this->Y-1 );
-            int w = getRandIntInclusive( 1, this->X-x );
-            int h = getRandIntInclusive( 1, this->Y-y );
-            int iMove = getRandIntInclusive( 0, 3 );
-            moveBlockIfPossible( x, y, w, h, vNx[ iMove ], vNy[ iMove ] );
+            for( int i = 0; i < 10; ++i ) {
+                // attempt to move a block
+                int x = getRandIntInclusive( 0, this->X-1 );
+                int y = getRandIntInclusive( 0, this->Y-1 );
+                int w = getRandIntInclusive( 1, this->X-x );
+                int h = getRandIntInclusive( 1, this->Y-y );
+                int iMove = getRandIntInclusive( 0, 3 );
+                moveBlockIfPossible( x, y, w, h, vNx[ iMove ], vNy[ iMove ] );
+            }
             break;
         }
         case MPEGMolecules:
-            throw exception("Not yet implemented");
+            // attempt to move every group
+            for( const auto& group : this->groups ) {
+                moveBlocksInGroup( group );
+            }
             break;
     }
 
     // find chemical reactions
-    doChemistry();
+    //doChemistry();
 }
 
 void Arena::doChemistry() {
@@ -320,9 +346,138 @@ bool Arena::moveBlockIfPossible( int x, int y, int w, int h, int dx, int dy ) {
 
 //----------------------------------------------------------------------------
 
+void Arena::moveBlocksInGroup( const Group& group ) {
+    // get the bounding box
+    int bb[4] = { INT_MAX, -INT_MAX, INT_MAX, -INT_MAX };
+    for( const size_t& iAtom : group.atoms ) {
+        const Atom& a = this->atoms[ iAtom ];
+        bb[0] = min( bb[0], a.x );
+        bb[1] = max( bb[1], a.x );
+        bb[2] = min( bb[2], a.y );
+        bb[3] = max( bb[3], a.y );
+    }
+    // recurse down it, making attempts to move it
+    moveBlocksInGroup( group, bb[0], bb[2], bb[1]-bb[0]+1, bb[3]-bb[2]+1 );
+}
+
+//----------------------------------------------------------------------------
+
+void Arena::moveBlocksInGroup( const Group& group, int x, int y, int w, int h ) {
+    int iMove = getRandIntInclusive( 0, 3 );
+    int dx = vNx[ iMove ];
+    int dy = vNy[ iMove ];
+    bool moved = moveMembersOfGroupInBlockIfPossible( group, x, y, w, h, dx, dy  );
+    if( moved ) { 
+        x += dx; // update the position of our block since it has moved
+        y += dy;
+    }
+    if( max( w, h ) == 1 ) return; // we have reached the bottom
+    if( w > h ) {
+        // split horizontally
+        int half_w = w / 2;
+        moveBlocksInGroup( group, x, y, half_w, h );
+        moveBlocksInGroup( group, x + half_w, y, w - half_w, h );
+    }
+    else {
+        // split horizontally
+        int half_h = h / 2;
+        moveBlocksInGroup( group, x, y, w, half_h );
+        moveBlocksInGroup( group, x, y + half_h, w, h - half_h );
+    }
+}
+
+//----------------------------------------------------------------------------
+
+bool Arena::moveMembersOfGroupInBlockIfPossible( const Group& group, int x, int y, int w, int h, int dx, int dy ) {
+    // collect the atoms in this block that we want to move
+    vector<size_t> movers;
+    for( int sx = x; sx < x+w; ++sx ) {
+        for( int sy = y; sy < y+h; ++sy ) {
+            if( isOffGrid( sx, sy ) || !this->grid[sx][sy].has_atom )
+                continue; // not an atom here
+            const size_t iAtom = this->grid[sx][sy].iAtom;
+            if( find( group.atoms.begin(), group.atoms.end(), iAtom ) == group.atoms.end() )
+                continue; // not one of our group's atoms
+            int tx = sx + dx;
+            int ty = sy + dy;
+            if( isOffGrid( tx, ty ) )
+                return false; // can't move off-grid
+            movers.push_back( iAtom );
+        }
+    }
+    // bond check
+    for( const size_t& iAtom : movers ) {
+        const Atom& a = this->atoms[ iAtom ];
+        for( const size_t iAtomB : a.bonded_atoms ) {
+            if( find( movers.begin(), movers.end(), iAtomB ) != movers.end() )
+                continue; // no problem, since B is also part of the moving set
+            const Atom& b = this->atoms[ iAtomB ];
+            if( !isWithinFlexibleBondNeighborhood( a.x + dx, a.y + dy, b.x, b.y ) )
+                return false; // would over-stretch this bond
+        }
+    }
+    // overlap check: 
+    // simple implementation for now: remove from grid and try to place in the new position, else replace
+    for( const size_t& iAtom : movers ) {
+        const Atom &atom = this->atoms[ iAtom ];
+        this->grid[ atom.x ][ atom.y ].has_atom = false;
+    }
+    bool all_ok = true;
+    for( const size_t& iAtom : movers ) {
+        const Atom &a = this->atoms[ iAtom ];
+        int tx = a.x + dx;
+        int ty = a.y + dy;
+        if( this->grid[ tx ][ ty ].has_atom ) {
+            all_ok = false;
+            break;
+        }
+    }
+    if( !all_ok ) {
+        dx = dy = 0;
+    }
+    for( const size_t& iAtom : movers ) {
+        Atom &a = this->atoms[ iAtom ];
+        a.x += dx;
+        a.y += dy;
+        this->grid[ a.x ][ a.y ].has_atom = true;
+        this->grid[ a.x ][ a.y ].iAtom = iAtom;
+    }
+    return all_ok;
+}
+                                
+//----------------------------------------------------------------------------
+
 int Arena::getRandIntInclusive( int a, int b )
 {
     return a + rand() % (b-a+1); // use something more uniform if needed
 }
 
 //----------------------------------------------------------------------------
+
+void Arena::combineGroupsInvolvingTheseIntoOne( size_t a, size_t b ) {
+    // find every group involving a or b
+    vector<size_t> groups_to_be_merged;
+	for( size_t iGroup = 0; iGroup < this->groups.size(); ++iGroup ) {
+        const Group& g = this->groups[ iGroup ];
+		if( find( begin( g.atoms ), end( g.atoms ), a ) != end( g.atoms ) ||
+                find( begin( g.atoms ), end( g.atoms ), b ) != end( g.atoms ) )
+            groups_to_be_merged.push_back( iGroup );
+    }
+    if( groups_to_be_merged.size() < 2 )
+        return; // nothing to do
+
+	Group& g = this->groups[ groups_to_be_merged.front() ];
+    for( size_t iiGroup = 1; iiGroup < groups_to_be_merged.size(); ++iiGroup ) {
+        const Group& gb = this->groups[ groups_to_be_merged[ iiGroup ] ];
+        vector<size_t> merged_atoms( g.atoms.size() + gb.atoms.size() );
+        const auto& end = set_union( g.atoms.begin(), g.atoms.end(), gb.atoms.begin(), gb.atoms.end(), merged_atoms.begin() );
+        merged_atoms.resize( end - merged_atoms.begin() );
+        g.atoms.assign( merged_atoms.begin(), merged_atoms.end() );
+    }
+    for( size_t iiGroup = groups_to_be_merged.size()-1; iiGroup >= 1; --iiGroup ) {
+        this->groups.erase( this->groups.begin() + groups_to_be_merged[ iiGroup  ] );
+    }
+}
+
+//----------------------------------------------------------------------------
+
