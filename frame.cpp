@@ -276,7 +276,12 @@ void MyFrame::OnSize(wxSizeEvent& event) {
 void MyFrame::OnIdle(wxIdleEvent& event) {
     if( render_every == 0 ) return;
 
-    this->arena.update();
+    try {
+        this->arena.update();
+    }
+    catch( exception& e ) {
+        wxMessageBox( e.what() );
+    }
     this->iterations++;
     if( iterations % this->render_every == 0 )
         this->Refresh( false );
@@ -286,7 +291,12 @@ void MyFrame::OnIdle(wxIdleEvent& event) {
 //-------------------------------------------------------------------------------------
 
 void MyFrame::OnStep(wxCommandEvent& WXUNUSED(event)) {
-    this->arena.update();
+    try {
+        this->arena.update();
+    }
+    catch( exception& e ) {
+        wxMessageBox( e.what() );
+    }
     this->iterations++;
     this->render_every = 0;
     this->Refresh(false);

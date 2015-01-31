@@ -45,14 +45,15 @@ class Arena {
         const MovementType                movement_type;
 
         // private functions
-        void addAllGroupsForFlexibleBond( size_t a, size_t b );
+        void addAllGroupsForNewBond( size_t a, size_t b );
         void removeGroupsWithOneButNotTheOther( size_t a, size_t b );
-        void moveGroupRandomly( const Group& group );
+        bool moveGroupIfPossible( const Group& group, int dx, int dy );
+        bool moveBlockIfPossible( int x, int y, int w, int h, int dx, int dy );
         void doChemistry();
 
         // useful constant values and functions
         static const int vNx[4];
         static const int vNy[4];
         static bool isWithinFlexibleBondNeighborhood( int x1, int y1, int x2, int y2 );
-        static int getRandInt( int n );
+        static int getRandIntInclusive( int a, int b );
 };
