@@ -77,76 +77,19 @@ void Arena::makeBond( size_t a, size_t b, BondType type ) {
     if( find( begin( this->atoms[ a ].bonded_atoms ), end( this->atoms[ a ].bonded_atoms ), b ) != end( this->atoms[ a ].bonded_atoms ) )
         throw invalid_argument("Atoms are already bonded");
 
-    switch( type ) {
-        case BondType::Moore:
-            this->atoms[ a ].bonded_atoms.push_back( b );
-            this->atoms[ b ].bonded_atoms.push_back( a );
-            break;
-        case BondType::vonNeumann:
-            this->atoms[ a ].rigid_bonded_atoms.push_back( b );
-            this->atoms[ b ].rigid_bonded_atoms.push_back( a );
-            break;
+    this->atoms[ a ].bonded_atoms.push_back( b );
+    this->atoms[ b ].bonded_atoms.push_back( a );
+	addFlexibleBond( a, b );
+    if( type == BondType::vonNeumann ) {
+		// remove any group that contains exactly one of a and b (can't have one without the other if a rigid bond)
+		this->groups.erase( remove_if( begin( this->groups ), end( this->groups ), 
+            GroupHasOneButNotTheOther( a, b ) ), end( this->groups ) );
     }
 }
 
 //----------------------------------------------------------------------------
 
-void Arena::makeGroups( FlexibilityMethod flexibility_method ) {
-    switch( flexibility_method )
-    {
-        case FlexibilityMethod::JustAtoms: break; // no new groups to add (already have one per atom)
-        case FlexibilityMethod::AllGroups: addAllGroups(); break;
-        case FlexibilityMethod::Tree: makeTreeOfGroups(); break;
-    }
-}
-
-//----------------------------------------------------------------------------
-
-void Arena::makeTreeOfGroups() {
-    // TODO
-    /*vector<Group> working_groups = this->groups;
-    while( true ) {
-        vector<Group> groups_to_be_merged;
-        for( const Group& group : working_groups ) {
-            // if this group has exiting bonds then it needs to be merged
-            if( test )
-                groups_to_be_merged.push_back( group );
-        }
-        if( groups_to_be_merged.empty() )
-            break;
-        // merge the groups, 
-        working_groups.clear();
-        for( something ) {
-            merged_group = something;
-            working_groups.push_back( merged_group );
-            this->groups.push_back( merged_group );
-        }
-    }*/
-}
-
-//----------------------------------------------------------------------------
-
-void Arena::addAllGroups() {
-    // add the rigid bonds first because they reduce the number of groups
-    for( size_t iAtom = 0; iAtom < this->atoms.size(); ++iAtom ) {
-        const Atom& a = this->atoms[ iAtom ];
-        for( const size_t& iAtom2 : a.rigid_bonded_atoms ) {
-            if( iAtom2 < iAtom ) continue; 
-            addAllGroupsForNewBond( iAtom, iAtom2, BondType::vonNeumann );
-        }
-    }
-    for( size_t iAtom = 0; iAtom < this->atoms.size(); ++iAtom ) {
-        const Atom& a = this->atoms[ iAtom ];
-        for( const size_t& iAtom2 : a.bonded_atoms ) {
-            if( iAtom2 < iAtom ) continue; 
-            addAllGroupsForNewBond( iAtom, iAtom2, BondType::Moore );
-        }
-    }
-}
-
-//----------------------------------------------------------------------------
-
-void Arena::addAllGroupsForNewBond( size_t a, size_t b, BondType type ) {
+void Arena::addFlexibleBond( size_t a, size_t b ) {
 	// add new groups obtained by combining pairwise every group that includes a but not b 
     // with every group that includes b but not a
 	vector<Group> new_groups;
@@ -180,12 +123,6 @@ void Arena::addAllGroupsForNewBond( size_t a, size_t b, BondType type ) {
         }
     }
 	this->groups.insert( this->groups.end(), new_groups.begin(), new_groups.end() );
-    // one optimisation: if it's a rigid bond then there's no point trying to move a and b separately
-    if( type == BondType::vonNeumann ) {
-        // remove any group that contains exactly one of a and b (can't move one without the other if a rigid bond)
-        this->groups.erase( remove_if( begin( this->groups ), end( this->groups ), 
-            GroupHasOneButNotTheOther( a, b ) ), end( this->groups ) );
-    }
 }
 
 //----------------------------------------------------------------------------
@@ -198,15 +135,12 @@ bool Arena::isWithinFlexibleBondNeighborhood( int x1, int y1, int x2, int y2 ) {
 
 void Arena::update() {
     // attempt to move every group
-    for( const auto& group : this->groups ) 
-    {
-        //const Group& group = this->groups[ rand() % this->groups.size() ];
+    for( const auto& group : this->groups ) {
         moveGroupRandomly( group );
     }
+    // find chemical reactions
     doChemistry();
 }
-
-//----------------------------------------------------------------------------
 
 void Arena::doChemistry() {
     for( int x = 0; x < this->X; ++x ) {
@@ -238,10 +172,6 @@ void Arena::moveGroupRandomly( const Group& group ) {
     // first test: would this move stretch any bond too far?
     bool can_move = true;
     for( const size_t& iAtomIn : group.atoms ) {
-        for( const size_t& iAtomOut : this->atoms[ iAtomIn ].rigid_bonded_atoms ) {
-            bool b_in_group = find( begin( group.atoms ), end( group.atoms ), iAtomOut ) != end( group.atoms );
-            if( !b_in_group ) return; // group cannot move if has rigid bond to something else
-        }
         for( const size_t& iAtomOut : this->atoms[ iAtomIn ].bonded_atoms ) {
             bool b_in_group = find( begin( group.atoms ), end( group.atoms ), iAtomOut ) != end( group.atoms );
             if( b_in_group ) continue; 
