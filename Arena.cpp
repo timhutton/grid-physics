@@ -19,7 +19,7 @@ const int Arena::vNy[4] = { -1, 0, 1, 0 };
 Arena::Arena(int x, int y)
     : X( x )
 	, Y( y )
-    , movement_type( MovementType::MPEGSpace )
+    , movement_type( MovementType::MPEGMolecules )
 {
 	this->grid = vector<vector<Slot>>( X, vector<Slot>( Y ) );
 }
@@ -206,7 +206,7 @@ void Arena::update() {
     }
 
     // find chemical reactions
-    //doChemistry();
+    doChemistry();
 }
 
 void Arena::doChemistry() {
@@ -356,33 +356,27 @@ void Arena::moveBlocksInGroup( const Group& group ) {
         bb[2] = min( bb[2], a.y );
         bb[3] = max( bb[3], a.y );
     }
-    // recurse down it, making attempts to move it
-    moveBlocksInGroup( group, bb[0], bb[2], bb[1]-bb[0]+1, bb[3]-bb[2]+1 );
-}
-
-//----------------------------------------------------------------------------
-
-void Arena::moveBlocksInGroup( const Group& group, int x, int y, int w, int h ) {
-    int iMove = getRandIntInclusive( 0, 3 );
-    int dx = vNx[ iMove ];
-    int dy = vNy[ iMove ];
-    bool moved = moveMembersOfGroupInBlockIfPossible( group, x, y, w, h, dx, dy  );
-    if( moved ) { 
-        x += dx; // update the position of our block since it has moved
-        y += dy;
+    // have a go at moving every rectangle contained in it
+    // (some bits might move outside the bounding box but that's not fatal)
+    struct Rect { int x,y,w,h; };
+    vector<Rect> rects;
+    Rect r;
+    for( r.x = bb[0]; r.x <= bb[1]; ++r.x ) {
+        for( r.y = bb[2]; r.y <= bb[3]; ++r.y ) {
+            for( r.w = 1; r.w <= bb[1] - r.x + 1; ++r.w ) {
+                for( r.h = 1; r.h <= bb[3] - r.y + 1; ++r.h ) {
+                    rects.push_back( r ) ;
+                }
+            }
+        }
     }
-    if( max( w, h ) == 1 ) return; // we have reached the bottom
-    if( w > h ) {
-        // split horizontally
-        int half_w = w / 2;
-        moveBlocksInGroup( group, x, y, half_w, h );
-        moveBlocksInGroup( group, x + half_w, y, w - half_w, h );
-    }
-    else {
-        // split horizontally
-        int half_h = h / 2;
-        moveBlocksInGroup( group, x, y, w, half_h );
-        moveBlocksInGroup( group, x, y + half_h, w, h - half_h );
+    // ( we test the rectangles in random order to avoid biasing the movement up and left)
+    random_shuffle( rects.begin(), rects.end() );
+    for( const Rect& r : rects ) {
+        int iMove = getRandIntInclusive( 0, 3 );
+        int dx = vNx[ iMove ];
+        int dy = vNy[ iMove ];
+        moveMembersOfGroupInBlockIfPossible( group, r.x, r.y, r.w, r.h, dx, dy );
     }
 }
 
@@ -449,7 +443,7 @@ bool Arena::moveMembersOfGroupInBlockIfPossible( const Group& group, int x, int 
 
 int Arena::getRandIntInclusive( int a, int b )
 {
-    return a + rand() % (b-a+1); // use something more uniform if needed
+    return a + rand() % ( b - a + 1 );
 }
 
 //----------------------------------------------------------------------------
