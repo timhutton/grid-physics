@@ -161,6 +161,22 @@ void MyFrame::seed() {
             arena.makeBond( i, k, Arena::BondType::Moore );
             arena.makeBond( j, l, Arena::BondType::Moore );
         }
+
+        if( 1 ) { 
+            // a longer chain
+            const int N = 10;
+            size_t a = arena.addAtom( 31, 0, 2 );
+            size_t b = arena.addAtom( 32, 0, 2 );
+            arena.makeBond( a, b, Arena::BondType::Moore );
+            for( int i = 1; i < N; ++i ) {
+                size_t a2 = arena.addAtom( 31, i, 2 );
+                size_t b2 = arena.addAtom( 32, i, 2 );
+                arena.makeBond( a, a2, Arena::BondType::Moore );
+                arena.makeBond( b, b2, Arena::BondType::Moore );
+                a = a2;
+                b = b2;
+            }
+        }
     
         if( 1 ) {
             // add some surrounding atoms
