@@ -163,16 +163,17 @@ void MyFrame::seed() {
         }
 
         if( 1 ) { 
+            Arena::BondType bond_type = Arena::BondType::Moore;
             // a longer chain
             const int N = 10;
             size_t a = arena.addAtom( 31, 0, 2 );
             size_t b = arena.addAtom( 32, 0, 2 );
-            arena.makeBond( a, b, Arena::BondType::Moore );
+            arena.makeBond( a, b, bond_type );
             for( int i = 1; i < N; ++i ) {
                 size_t a2 = arena.addAtom( 31, i, 2 );
                 size_t b2 = arena.addAtom( 32, i, 2 );
-                arena.makeBond( a, a2, Arena::BondType::Moore );
-                arena.makeBond( b, b2, Arena::BondType::Moore );
+                arena.makeBond( a, a2, bond_type );
+                arena.makeBond( b, b2, bond_type );
                 a = a2;
                 b = b2;
             }
@@ -276,8 +277,11 @@ void MyFrame::drawArena( wxGraphicsContext* pGC, int scale ) {
             if( iAtom2 < iAtom ) continue; 
             Arena::Atom b = this->arena.getAtom( iAtom2 );
             switch( bond.type ) {
-                case Arena::BondType::Moore:      pGC->SetPen(thinBondPen);  break;
-                case Arena::BondType::vonNeumann: pGC->SetPen(thickBondPen); break;
+                default:
+                case Arena::BondType::Moore:       pGC->SetPen(thinBondPen);  break;
+                case Arena::BondType::vonNeumann:  pGC->SetPen(thickBondPen); break;
+                case Arena::BondType::vonNeumann2: 
+                case Arena::BondType::Moore2:      pGC->SetPen(*wxGREY_PEN); break;
             }
             pGC->StrokeLine( ( a.x + 0.5 ) * scale, ( a.y + 0.5 ) * scale, ( b.x + 0.5 ) * scale, ( b.y + 0.5 ) * scale );
         }

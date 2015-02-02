@@ -173,8 +173,10 @@ void Arena::removeGroupsWithOneButNotTheOther( size_t a, size_t b ) {
 
 bool Arena::isWithinBondNeighborhood( BondType type, int x1, int y1, int x2, int y2 ) {
     switch( type ) {
-        case Moore:      return abs( x1 - x2 ) <= 1 && abs( y1 - y2 ) <= 1;
-        case vonNeumann: return abs( x1 - x2 ) + abs( y1 - y2 ) <= 1;
+        case vonNeumann:  return abs( x1 - x2 ) + abs( y1 - y2 ) <= 1;
+        case Moore:       return abs( x1 - x2 ) <= 1 && abs( y1 - y2 ) <= 1;
+        case vonNeumann2: return abs( x1 - x2 ) + abs( y1 - y2 ) <= 2;
+        case Moore2:      return abs( x1 - x2 ) <= 2 && abs( y1 - y2 ) <= 2;
     }
     throw out_of_range("unexpected enum");
 }
@@ -214,6 +216,8 @@ void Arena::update() {
     // find chemical reactions
     doChemistry();
 }
+
+//----------------------------------------------------------------------------
 
 void Arena::doChemistry() {
     for( int x = 0; x < this->X; ++x ) {

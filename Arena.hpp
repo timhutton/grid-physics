@@ -9,7 +9,7 @@ class Arena {
         Arena( int x, int y );
 
         // public typedefs
-        enum BondType { Moore, vonNeumann };
+        enum BondType { vonNeumann, Moore, vonNeumann2, Moore2 };
         struct Bond { size_t iAtom; BondType type; };
         struct Atom { int x, y; int type; std::vector<Bond> bonds; };
 
