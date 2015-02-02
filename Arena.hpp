@@ -8,13 +8,18 @@ class Arena {
         
         Arena( int x, int y );
 
-        // public typedefs
-        enum BondType { vonNeumann, Moore, vonNeumann2, Moore2 };
-        struct Bond { size_t iAtom; BondType type; };
+        // public typedefs              // as squared Euclidean distance r2:
+        enum Neighborhood { vonNeumann  // r2 <= 1
+                      , Moore           // r2 <= 2
+                      , vonNeumann2     // r2 <= 4
+                      , knight          // r2 <= 5
+                      , Moore2          // r2 <= 8
+                      };
+        struct Bond { size_t iAtom; Neighborhood range; };
         struct Atom { int x, y; int type; std::vector<Bond> bonds; };
 
 		size_t addAtom( int x, int y, int type );
-		void makeBond( size_t a, size_t b, BondType bond_type );
+		void makeBond( size_t a, size_t b, Neighborhood range );
         void update();
 
         // accessors
@@ -60,6 +65,6 @@ class Arena {
         // useful constant values and functions
         static const int vNx[4];
         static const int vNy[4];
-        static bool isWithinBondNeighborhood( BondType type, int x1, int y1, int x2, int y2 );
+        static bool isWithinNeighborhood( Neighborhood type, int x1, int y1, int x2, int y2 );
         static int getRandIntInclusive( int a, int b );
 };

@@ -41,7 +41,7 @@ bool Arena::hasAtom( int x, int y ) const {
     
 //----------------------------------------------------------------------------
 
-size_t Arena::addAtom( int x, int y, int type) {
+size_t Arena::addAtom( int x, int y, int type ) {
 
     if( isOffGrid(x,y ) )
 		throw out_of_range("Atom not on grid");
@@ -69,26 +69,26 @@ size_t Arena::addAtom( int x, int y, int type) {
 
 //----------------------------------------------------------------------------
 
-void Arena::makeBond( size_t a, size_t b, BondType type ) {
+void Arena::makeBond( size_t a, size_t b, Neighborhood range ) {
 	if( a < 0 || a >= atoms.size() || b < 0 || b >= atoms.size() )
 		throw out_of_range("Invalid atom index");
 	if( a == b )
 		throw invalid_argument("Cannot bond atom to itself");
-    if( !isWithinBondNeighborhood( type, this->atoms[a].x, this->atoms[a].y, this->atoms[b].x, this->atoms[b].y ) )
+    if( !isWithinNeighborhood( range, this->atoms[a].x, this->atoms[a].y, this->atoms[b].x, this->atoms[b].y ) )
         throw invalid_argument("Atoms are too far apart to be bonded");
     if( hasBond( a, b ) )
         throw invalid_argument("Atoms are already bonded");
 
-    Bond ab = { b, type };
+    Bond ab = { b, range };
     this->atoms[ a ].bonds.push_back( ab );
-    Bond ba = { a, type };
+    Bond ba = { a, range };
     this->atoms[ b ].bonds.push_back( ba );
 
     switch( this->movement_type ) {
         case JustAtoms:
             // here we can never move atoms with von Neumann bonds so
             // we can remove any groups with them in
-            if( type == BondType::vonNeumann )
+            if( range == Neighborhood::vonNeumann )
                 removeGroupsWithOneButNotTheOther( a, b );
             break;
         case AllGroups:
@@ -96,7 +96,7 @@ void Arena::makeBond( size_t a, size_t b, BondType type ) {
             if( this->movement_type == MovementType::AllGroups )
 	            addAllGroupsForNewBond( a, b );
             // if a and b are rigidly bonded then we don't need to check their groups separately
-            if( type == BondType::vonNeumann )
+            if( range == Neighborhood::vonNeumann )
                 removeGroupsWithOneButNotTheOther( a, b );
             break;
         case MPEGSpace: 
@@ -171,12 +171,14 @@ void Arena::removeGroupsWithOneButNotTheOther( size_t a, size_t b ) {
 
 //----------------------------------------------------------------------------
 
-bool Arena::isWithinBondNeighborhood( BondType type, int x1, int y1, int x2, int y2 ) {
+bool Arena::isWithinNeighborhood( Neighborhood type, int x1, int y1, int x2, int y2 ) {
+    const int r2 = (x1-x2)*(x1-x2) + (y1-y2)*(y1-y2);
     switch( type ) {
-        case vonNeumann:  return abs( x1 - x2 ) + abs( y1 - y2 ) <= 1;
-        case Moore:       return abs( x1 - x2 ) <= 1 && abs( y1 - y2 ) <= 1;
-        case vonNeumann2: return abs( x1 - x2 ) + abs( y1 - y2 ) <= 2;
-        case Moore2:      return abs( x1 - x2 ) <= 2 && abs( y1 - y2 ) <= 2;
+        case vonNeumann:  return r2 <= 1;
+        case Moore:       return r2 <= 2;
+        case vonNeumann2: return r2 <= 4;
+        case knight:      return r2 <= 5;
+        case Moore2:      return r2 <= 8;
     }
     throw out_of_range("unexpected enum");
 }
@@ -214,7 +216,7 @@ void Arena::update() {
     }
 
     // find chemical reactions
-    doChemistry();
+    //doChemistry();
 }
 
 //----------------------------------------------------------------------------
@@ -231,8 +233,9 @@ void Arena::doChemistry() {
                 size_t iAtomB = this->grid[tx][ty].iAtom;
                 Atom& a = this->atoms[ iAtomA ];
                 Atom& b = this->atoms[ iAtomB ];
-                if( !hasBond( iAtomA, iAtomB ) && a.type == b.type && a.bonds.size() + b.bonds.size() < 2 ) {
-                    makeBond( iAtomA, iAtomB, BondType::Moore );
+                if( !hasBond( iAtomA, iAtomB ) && a.type == b.type && a.bonds.size() + b.bonds.size() < 3 ) {
+                    Neighborhood bond_range = rand() % 4 ? Neighborhood::Moore : Neighborhood::vonNeumann;
+                    makeBond( iAtomA, iAtomB, bond_range );
                 }
             }
         }
@@ -251,7 +254,7 @@ bool Arena::moveGroupIfPossible( const Group& group, int dx, int dy ) {
             if( b_in_group ) continue; 
             const Atom& atomIn  = this->atoms[ iAtomIn ];
             const Atom& atomOut = this->atoms[ iAtomOut ];
-            if( !isWithinBondNeighborhood( bond.type, atomIn.x + dx, atomIn.y + dy, atomOut.x, atomOut.y ) ) {
+            if( !isWithinNeighborhood( bond.range, atomIn.x + dx, atomIn.y + dy, atomOut.x, atomOut.y ) ) {
                 can_move = false;
                 break;
             }
@@ -327,7 +330,7 @@ bool Arena::moveBlockIfPossible( int x, int y, int w, int h, int dx, int dy ) {
                 const Atom& b = this->atoms[ iAtomB ];
                 if( b.x >= left && b.x <= right && b.y >= top && b.y <= bottom )
                     continue; // atom B is also within the block
-                if( !isWithinBondNeighborhood( bond.type, sx + dx, sy + dy, b.x, b.y ) )
+                if( !isWithinNeighborhood( bond.range, sx + dx, sy + dy, b.x, b.y ) )
                     return false; // would over-stretch this bond
             }
         }
@@ -415,7 +418,7 @@ bool Arena::moveMembersOfGroupInBlockIfPossible( const Group& group, int x, int 
             if( find( movers.begin(), movers.end(), iAtomB ) != movers.end() )
                 continue; // no problem, since B is also part of the moving set
             const Atom& b = this->atoms[ iAtomB ];
-            if( !isWithinBondNeighborhood( bond.type, a.x + dx, a.y + dy, b.x, b.y ) )
+            if( !isWithinNeighborhood( bond.range, a.x + dx, a.y + dy, b.x, b.y ) )
                 return false; // would over-stretch this bond
         }
     }

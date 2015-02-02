@@ -76,6 +76,7 @@ MyFrame::MyFrame(const wxString& title)
 
 void MyFrame::seed() {
 
+    Arena::Neighborhood bond_range = Arena::Neighborhood::Moore;
     try {
         // an 8-cell loop with some rigid sections
         if( 1 ) {
@@ -87,14 +88,14 @@ void MyFrame::seed() {
             size_t f = arena.addAtom( 0, 3, 0 );
             size_t g = arena.addAtom( 0, 2, 0 );
             size_t h = arena.addAtom( 0, 1, 0 );
-            arena.makeBond( a, b, Arena::BondType::vonNeumann );
-            arena.makeBond( b, c, Arena::BondType::vonNeumann );
-            arena.makeBond( c, d, Arena::BondType::Moore );
-            arena.makeBond( d, e, Arena::BondType::Moore );
-            arena.makeBond( e, f, Arena::BondType::vonNeumann );
-            arena.makeBond( f, g, Arena::BondType::Moore );
-            arena.makeBond( g, h, Arena::BondType::vonNeumann );
-            arena.makeBond( h, a, Arena::BondType::Moore );
+            arena.makeBond( a, b, Arena::Neighborhood::vonNeumann );
+            arena.makeBond( b, c, Arena::Neighborhood::vonNeumann );
+            arena.makeBond( c, d, Arena::Neighborhood::Moore );
+            arena.makeBond( d, e, Arena::Neighborhood::Moore );
+            arena.makeBond( e, f, Arena::Neighborhood::vonNeumann );
+            arena.makeBond( f, g, Arena::Neighborhood::Moore );
+            arena.makeBond( g, h, Arena::Neighborhood::vonNeumann );
+            arena.makeBond( h, a, Arena::Neighborhood::Moore );
         }
     
         // a box with flailing arms
@@ -114,20 +115,20 @@ void MyFrame::seed() {
             size_t m = arena.addAtom( 11, 9, 1 );
             size_t n = arena.addAtom( 12, 8, 1 );
             size_t o = arena.addAtom( 13, 7, 1 );
-            arena.makeBond( a, b, Arena::BondType::vonNeumann );
-            arena.makeBond( b, c, Arena::BondType::vonNeumann );
-            arena.makeBond( c, d, Arena::BondType::vonNeumann );
-            arena.makeBond( d, e, Arena::BondType::vonNeumann );
-            arena.makeBond( e, f, Arena::BondType::vonNeumann );
-            arena.makeBond( f, g, Arena::BondType::vonNeumann );
-            arena.makeBond( g, h, Arena::BondType::vonNeumann );
-            arena.makeBond( h, i, Arena::BondType::vonNeumann );
-            arena.makeBond( a, j, Arena::BondType::Moore );
-            arena.makeBond( j, k, Arena::BondType::Moore );
-            arena.makeBond( k, l, Arena::BondType::Moore );
-            arena.makeBond( c, m, Arena::BondType::Moore );
-            arena.makeBond( m, n, Arena::BondType::Moore );
-            arena.makeBond( n, o, Arena::BondType::Moore );
+            arena.makeBond( a, b, Arena::Neighborhood::vonNeumann );
+            arena.makeBond( b, c, Arena::Neighborhood::vonNeumann );
+            arena.makeBond( c, d, Arena::Neighborhood::vonNeumann );
+            arena.makeBond( d, e, Arena::Neighborhood::vonNeumann );
+            arena.makeBond( e, f, Arena::Neighborhood::vonNeumann );
+            arena.makeBond( f, g, Arena::Neighborhood::vonNeumann );
+            arena.makeBond( g, h, Arena::Neighborhood::vonNeumann );
+            arena.makeBond( h, i, Arena::Neighborhood::vonNeumann );
+            arena.makeBond( a, j, Arena::Neighborhood::Moore );
+            arena.makeBond( j, k, Arena::Neighborhood::Moore );
+            arena.makeBond( k, l, Arena::Neighborhood::Moore );
+            arena.makeBond( c, m, Arena::Neighborhood::Moore );
+            arena.makeBond( m, n, Arena::Neighborhood::Moore );
+            arena.makeBond( n, o, Arena::Neighborhood::Moore );
         }
 
         // a double-stranded molecule
@@ -144,36 +145,35 @@ void MyFrame::seed() {
             size_t j = arena.addAtom( 22, 25, 3 );
             size_t k = arena.addAtom( 21, 26, 5 );
             size_t l = arena.addAtom( 22, 26, 3 );
-            arena.makeBond( a, b, Arena::BondType::Moore );
-            arena.makeBond( c, d, Arena::BondType::Moore );
-            arena.makeBond( e, f, Arena::BondType::Moore );
-            arena.makeBond( g, h, Arena::BondType::Moore );
-            arena.makeBond( i, j, Arena::BondType::Moore );
-            arena.makeBond( k, l, Arena::BondType::Moore );
-            arena.makeBond( a, c, Arena::BondType::Moore );
-            arena.makeBond( b, d, Arena::BondType::Moore );
-            arena.makeBond( c, e, Arena::BondType::Moore );
-            arena.makeBond( d, f, Arena::BondType::Moore );
-            arena.makeBond( e, g, Arena::BondType::Moore );
-            arena.makeBond( f, h, Arena::BondType::Moore );
-            arena.makeBond( g, i, Arena::BondType::Moore );
-            arena.makeBond( h, j, Arena::BondType::Moore );
-            arena.makeBond( i, k, Arena::BondType::Moore );
-            arena.makeBond( j, l, Arena::BondType::Moore );
+            arena.makeBond( a, b, bond_range );
+            arena.makeBond( c, d, bond_range );
+            arena.makeBond( e, f, bond_range );
+            arena.makeBond( g, h, bond_range );
+            arena.makeBond( i, j, bond_range );
+            arena.makeBond( k, l, bond_range );
+            arena.makeBond( a, c, bond_range );
+            arena.makeBond( b, d, bond_range );
+            arena.makeBond( c, e, bond_range );
+            arena.makeBond( d, f, bond_range );
+            arena.makeBond( e, g, bond_range );
+            arena.makeBond( f, h, bond_range );
+            arena.makeBond( g, i, bond_range );
+            arena.makeBond( h, j, bond_range );
+            arena.makeBond( i, k, bond_range );
+            arena.makeBond( j, l, bond_range );
         }
 
         if( 1 ) { 
-            Arena::BondType bond_type = Arena::BondType::Moore;
             // a longer chain
             const int N = 10;
             size_t a = arena.addAtom( 31, 0, 2 );
             size_t b = arena.addAtom( 32, 0, 2 );
-            arena.makeBond( a, b, bond_type );
+            arena.makeBond( a, b, bond_range );
             for( int i = 1; i < N; ++i ) {
                 size_t a2 = arena.addAtom( 31, i, 2 );
                 size_t b2 = arena.addAtom( 32, i, 2 );
-                arena.makeBond( a, a2, bond_type );
-                arena.makeBond( b, b2, bond_type );
+                arena.makeBond( a, a2, bond_range );
+                arena.makeBond( b, b2, bond_range );
                 a = a2;
                 b = b2;
             }
@@ -276,12 +276,12 @@ void MyFrame::drawArena( wxGraphicsContext* pGC, int scale ) {
             const size_t iAtom2 = bond.iAtom;
             if( iAtom2 < iAtom ) continue; 
             Arena::Atom b = this->arena.getAtom( iAtom2 );
-            switch( bond.type ) {
+            switch( bond.range ) {
                 default:
-                case Arena::BondType::Moore:       pGC->SetPen(thinBondPen);  break;
-                case Arena::BondType::vonNeumann:  pGC->SetPen(thickBondPen); break;
-                case Arena::BondType::vonNeumann2: 
-                case Arena::BondType::Moore2:      pGC->SetPen(*wxGREY_PEN); break;
+                case Arena::Neighborhood::Moore:       pGC->SetPen(thinBondPen);  break;
+                case Arena::Neighborhood::vonNeumann:  pGC->SetPen(thickBondPen); break;
+                case Arena::Neighborhood::vonNeumann2: 
+                case Arena::Neighborhood::Moore2:      pGC->SetPen(*wxGREY_PEN); break;
             }
             pGC->StrokeLine( ( a.x + 0.5 ) * scale, ( a.y + 0.5 ) * scale, ( b.x + 0.5 ) * scale, ( b.y + 0.5 ) * scale );
         }
