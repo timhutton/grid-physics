@@ -48,7 +48,9 @@ class Arena {
 		std::vector<Atom>                 atoms;
         std::vector<std::vector<Slot>>    grid;
 		std::vector<Group>                groups;
-        const MovementMethod              movement_type;
+        const MovementMethod              movement_method;
+        const Neighborhood                movement_neighborhood;
+        const Neighborhood                chemical_neighborhood;
 
         // private functions
         void addAllGroupsForNewBond( size_t a, size_t b );
@@ -61,10 +63,11 @@ class Arena {
         bool moveMembersOfGroupInBlockIfPossible( const Group& group, int x, int y, int w, int h, int dx, int dy  );
         void doChemistry();
         bool hasBond( size_t a, size_t b ) const;
+        int getRandomMove() const;
 
         // useful constant values and functions
-        static const int vNx[4];
-        static const int vNy[4];
         static bool isWithinNeighborhood( Neighborhood type, int x1, int y1, int x2, int y2 );
+        static void getNeighborByIndex( Neighborhood type, int index, int& dx, int& dy );
         static int getRandIntInclusive( int a, int b );
+        static void getRandomMove( Neighborhood nhood, int& dx, int& dy );
 };

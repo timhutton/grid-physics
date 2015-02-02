@@ -11,15 +11,12 @@ using namespace std;
 
 //----------------------------------------------------------------------------
 
-const int Arena::vNx[4] = { 0, 1, 0, -1 }; // NESW
-const int Arena::vNy[4] = { -1, 0, 1, 0 };
-
-//----------------------------------------------------------------------------
-
 Arena::Arena(int x, int y)
     : X( x )
 	, Y( y )
-    , movement_type( MovementMethod::MPEGMolecules )
+    , movement_method( MovementMethod::JustAtoms )
+    , movement_neighborhood( Neighborhood::vonNeumann ) // currently only vonNeumann supported
+    , chemical_neighborhood( Neighborhood::vonNeumann )
 {
 	this->grid = vector<vector<Slot>>( X, vector<Slot>( Y ) );
 }
@@ -84,7 +81,7 @@ void Arena::makeBond( size_t a, size_t b, Neighborhood range ) {
     Bond ba = { a, range };
     this->atoms[ b ].bonds.push_back( ba );
 
-    switch( this->movement_type ) {
+    switch( this->movement_method ) {
         case JustAtoms:
             // here we can never move atoms with von Neumann bonds so
             // we can remove any groups with them in
@@ -93,8 +90,7 @@ void Arena::makeBond( size_t a, size_t b, Neighborhood range ) {
             break;
         case AllGroups:
             //  we need to find all the subgraphs created by this new bond
-            if( this->movement_type == MovementMethod::AllGroups )
-	            addAllGroupsForNewBond( a, b );
+	        addAllGroupsForNewBond( a, b );
             // if a and b are rigidly bonded then we don't need to check their groups separately
             if( range == Neighborhood::vonNeumann )
                 removeGroupsWithOneButNotTheOther( a, b );
@@ -185,14 +181,51 @@ bool Arena::isWithinNeighborhood( Neighborhood type, int x1, int y1, int x2, int
 
 //----------------------------------------------------------------------------
 
+void Arena::getNeighborByIndex( Neighborhood type, int index, int& dx, int& dy ) {
+    switch( type ) {
+        case Neighborhood::vonNeumann: {
+            const int vNx[4] = { 0, 1, 0, -1 }; // NESW
+            const int vNy[4] = { -1, 0, 1, 0 };
+            if( index < 0 || index > 3 )
+                throw out_of_range("Neighborhood site index");
+            dx = vNx[ index ];
+            dy = vNy[ index ];
+            break;
+        }
+        case Neighborhood::Moore: {
+            const int Mx[8] = { 0, 1, 1, 1, 0, -1, -1, -1, }; // clockwise from North
+            const int My[8] = { -1, -1, 0, 1, 1, 1, 0, -1 };
+            if( index < 0 || index > 7 )
+                throw out_of_range("Neighborhood site index");
+            dx = Mx[ index ];
+            dy = My[ index ];
+            break;
+        }
+        default: throw out_of_range("Unsupported neighborhood");
+    }
+}
+
+//----------------------------------------------------------------------------
+
+void Arena::getRandomMove( Neighborhood nhood, int &dx, int &dy ) {
+    switch( nhood ) {
+        case Neighborhood::vonNeumann: getNeighborByIndex( nhood, getRandIntInclusive(0,3), dx, dy ); break;
+        case Neighborhood::Moore: getNeighborByIndex( nhood, getRandIntInclusive(0,7), dx, dy ); break;
+        default: throw out_of_range("Unsupported neighborhood");
+    }
+}
+
+//----------------------------------------------------------------------------
+
 void Arena::update() {
-    switch( this->movement_type ) {
+    switch( this->movement_method ) {
         case JustAtoms:
         case AllGroups:
             // attempt to move every group
             for( const auto& group : this->groups ) {
-                int iMove = getRandIntInclusive( 0, 3 );
-                moveGroupIfPossible( group, vNx[ iMove ], vNy[ iMove ] );
+                int dx, dy;
+                getRandomMove( this->movement_neighborhood, dx, dy );
+                moveGroupIfPossible( group, dx, dy );
             }
             break;
         case MPEGSpace: {
@@ -202,8 +235,9 @@ void Arena::update() {
                 int y = getRandIntInclusive( 0, this->Y-1 );
                 int w = getRandIntInclusive( 1, this->X-x );
                 int h = getRandIntInclusive( 1, this->Y-y );
-                int iMove = getRandIntInclusive( 0, 3 );
-                moveBlockIfPossible( x, y, w, h, vNx[ iMove ], vNy[ iMove ] );
+                int dx, dy;
+                getRandomMove( this->movement_neighborhood, dx, dy );
+                moveBlockIfPossible( x, y, w, h, dx, dy );
             }
             break;
         }
@@ -225,18 +259,18 @@ void Arena::doChemistry() {
     for( int x = 0; x < this->X; ++x ) {
         for( int y = 0; y < this->Y; ++y ) {
             if( !this->grid[x][y].has_atom ) continue;
-            for( int iMove = 0; iMove < 4; ++iMove ) {
-                int tx = x + this->vNx[ iMove ];
-                int ty = y + this->vNy[ iMove ];
-                if( isOffGrid( tx, ty ) || !this->grid[tx][ty].has_atom ) continue;
-                size_t iAtomA = this->grid[x][y].iAtom;
-                size_t iAtomB = this->grid[tx][ty].iAtom;
-                Atom& a = this->atoms[ iAtomA ];
-                Atom& b = this->atoms[ iAtomB ];
-                if( !hasBond( iAtomA, iAtomB ) && a.type == b.type && a.bonds.size() + b.bonds.size() < 3 ) {
-                    Neighborhood bond_range = rand() % 4 ? Neighborhood::Moore : Neighborhood::vonNeumann;
-                    makeBond( iAtomA, iAtomB, bond_range );
-                }
+            int dx, dy;
+            getRandomMove( this->chemical_neighborhood, dx, dy );
+            int tx = x + dx;
+            int ty = y + dy;
+            if( isOffGrid( tx, ty ) || !this->grid[tx][ty].has_atom ) continue;
+            size_t iAtomA = this->grid[x][y].iAtom;
+            size_t iAtomB = this->grid[tx][ty].iAtom;
+            Atom& a = this->atoms[ iAtomA ];
+            Atom& b = this->atoms[ iAtomB ];
+            if( !hasBond( iAtomA, iAtomB ) && a.type == b.type && a.bonds.size() + b.bonds.size() < 3 ) {
+                Neighborhood bond_range = rand() % 4 ? Neighborhood::Moore : Neighborhood::vonNeumann;
+                makeBond( iAtomA, iAtomB, bond_range );
             }
         }
     }
@@ -371,9 +405,8 @@ void Arena::moveBlocksInGroup( const Group& group ) {
         bb[3] = max( bb[3], a.y );
     }
     // let the whole block have a go at moving
-    int iMove = getRandIntInclusive( 0, 3 );
-    int dx = vNx[ iMove ];
-    int dy = vNy[ iMove ];
+    int dx, dy;
+    getRandomMove( this->movement_neighborhood, dx, dy );
     bool moved = moveMembersOfGroupInBlockIfPossible( group, bb[0], bb[2], bb[1]-bb[0]+1, bb[3]-bb[2]+1, dx, dy );
     if( moved ) { bb[0]+=dx; bb[1]+=dx; bb[2]+=dy; bb[3]+=dy; }
     // also try moving some rectangles within it
@@ -384,9 +417,7 @@ void Arena::moveBlocksInGroup( const Group& group ) {
         int h = getRandIntInclusive( 1, bb[3] - bb[2] + 1 );
         int x = getRandIntInclusive( bb[0], bb[1] - w + 1 );
         int y = getRandIntInclusive( bb[2], bb[3] - h + 1 );
-        int iMove = getRandIntInclusive( 0, 3 );
-        int dx = vNx[ iMove ];
-        int dy = vNy[ iMove ];
+        getRandomMove( this->movement_neighborhood, dx, dy );
         moveMembersOfGroupInBlockIfPossible( group, x, y, w, h, dx, dy );
     }
 }
