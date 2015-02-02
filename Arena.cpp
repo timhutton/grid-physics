@@ -181,36 +181,24 @@ bool Arena::isWithinNeighborhood( Neighborhood type, int x1, int y1, int x2, int
 
 //----------------------------------------------------------------------------
 
-void Arena::getNeighborByIndex( Neighborhood type, int index, int& dx, int& dy ) {
-    switch( type ) {
+void Arena::getRandomMove( Neighborhood nhood, int &dx, int &dy ) {
+    switch( nhood ) {
         case Neighborhood::vonNeumann: {
-            const int vNx[4] = { 0, 1, 0, -1 }; // NESW
-            const int vNy[4] = { -1, 0, 1, 0 };
-            if( index < 0 || index > 3 )
-                throw out_of_range("Neighborhood site index");
-            dx = vNx[ index ];
-            dy = vNy[ index ];
+            const int vNx[4] = {  0,  1,  0, -1 }; // clockwise from North
+            const int vNy[4] = { -1,  0,  1,  0 };
+            const int iMove = getRandIntInclusive(0,3);
+            dx = vNx[ iMove ];
+            dy = vNy[ iMove ];
             break;
         }
         case Neighborhood::Moore: {
-            const int Mx[8] = { 0, 1, 1, 1, 0, -1, -1, -1, }; // clockwise from North
-            const int My[8] = { -1, -1, 0, 1, 1, 1, 0, -1 };
-            if( index < 0 || index > 7 )
-                throw out_of_range("Neighborhood site index");
-            dx = Mx[ index ];
-            dy = My[ index ];
+            const int Mx[8] = {  0,  1,  1,  1,  0, -1, -1, -1 }; // clockwise from North
+            const int My[8] = { -1, -1,  0,  1,  1,  1,  0, -1 };
+            const int iMove = getRandIntInclusive(0,7);
+            dx = Mx[ iMove ];
+            dy = My[ iMove ];
             break;
         }
-        default: throw out_of_range("Unsupported neighborhood");
-    }
-}
-
-//----------------------------------------------------------------------------
-
-void Arena::getRandomMove( Neighborhood nhood, int &dx, int &dy ) {
-    switch( nhood ) {
-        case Neighborhood::vonNeumann: getNeighborByIndex( nhood, getRandIntInclusive(0,3), dx, dy ); break;
-        case Neighborhood::Moore: getNeighborByIndex( nhood, getRandIntInclusive(0,7), dx, dy ); break;
         default: throw out_of_range("Unsupported neighborhood");
     }
 }

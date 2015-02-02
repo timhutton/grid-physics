@@ -65,9 +65,8 @@ class Arena {
         bool hasBond( size_t a, size_t b ) const;
         int getRandomMove() const;
 
-        // useful constant values and functions
+        // useful functions
         static bool isWithinNeighborhood( Neighborhood type, int x1, int y1, int x2, int y2 );
-        static void getNeighborByIndex( Neighborhood type, int index, int& dx, int& dy );
         static int getRandIntInclusive( int a, int b );
         static void getRandomMove( Neighborhood nhood, int& dx, int& dy );
 };
