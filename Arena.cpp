@@ -14,7 +14,7 @@ using namespace std;
 Arena::Arena(int x, int y)
     : X( x )
 	, Y( y )
-    , movement_method( MovementMethod::JustAtoms )
+    , movement_method( MovementMethod::MPEGMolecules )
     , movement_neighborhood( Neighborhood::vonNeumann ) // currently only vonNeumann supported
     , chemical_neighborhood( Neighborhood::vonNeumann )
 {
@@ -250,7 +250,7 @@ void Arena::update() {
     }
 
     // find chemical reactions
-    //doChemistry();
+    doChemistry();
 }
 
 //----------------------------------------------------------------------------
@@ -268,8 +268,8 @@ void Arena::doChemistry() {
             size_t iAtomB = this->grid[tx][ty].iAtom;
             Atom& a = this->atoms[ iAtomA ];
             Atom& b = this->atoms[ iAtomB ];
-            if( !hasBond( iAtomA, iAtomB ) && a.type == b.type && a.bonds.size() + b.bonds.size() < 3 ) {
-                Neighborhood bond_range = rand() % 4 ? Neighborhood::Moore : Neighborhood::vonNeumann;
+            if( !hasBond( iAtomA, iAtomB ) && a.type == b.type && a.bonds.size() + b.bonds.size() < 2 ) {
+                Neighborhood bond_range = Neighborhood::Moore;
                 makeBond( iAtomA, iAtomB, bond_range );
             }
         }
