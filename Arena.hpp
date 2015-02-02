@@ -8,13 +8,13 @@ class Arena {
         
         Arena( int x, int y );
 
-        // public typedefs              // as squared Euclidean distance r2:
-        enum Neighborhood { vonNeumann  // r2 <= 1
-                      , Moore           // r2 <= 2
-                      , vonNeumann2     // r2 <= 4
-                      , knight          // r2 <= 5
-                      , Moore2          // r2 <= 8
-                      };
+        // public typedefs                  // as squared Euclidean distance r2:
+        enum Neighborhood { vonNeumann      // r2 <= 1
+                          , Moore           // r2 <= 2
+                          , vonNeumann2     // r2 <= 4
+                          , knight          // r2 <= 5
+                          , Moore2          // r2 <= 8
+                          };
         struct Bond { size_t iAtom; Neighborhood range; };
         struct Atom { int x, y; int type; std::vector<Bond> bonds; };
 
@@ -36,11 +36,11 @@ class Arena {
         // typedefs
         struct Group { std::vector<size_t> atoms; };
         struct Slot { bool has_atom; size_t iAtom; Slot() : has_atom( false ) {} };
-        enum MovementType { JustAtoms      // atoms can move individually
-                          , AllGroups      // all subgraphs of atoms can move individually
-                          , MPEGSpace      // space itself moves around in large blocks
-                          , MPEGMolecules  // molecules are divided spatially into movement blocks on the fly
-                          };
+        enum MovementMethod { JustAtoms      // atoms can move individually
+                            , AllGroups      // all subgraphs of atoms can move individually
+                            , MPEGSpace      // space itself moves around in large blocks
+                            , MPEGMolecules  // molecules are divided spatially into movement blocks on the fly
+                            };
 
         // private variables
         const int                         X;
@@ -48,7 +48,7 @@ class Arena {
 		std::vector<Atom>                 atoms;
         std::vector<std::vector<Slot>>    grid;
 		std::vector<Group>                groups;
-        const MovementType                movement_type;
+        const MovementMethod              movement_type;
 
         // private functions
         void addAllGroupsForNewBond( size_t a, size_t b );

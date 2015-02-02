@@ -19,7 +19,7 @@ const int Arena::vNy[4] = { -1, 0, 1, 0 };
 Arena::Arena(int x, int y)
     : X( x )
 	, Y( y )
-    , movement_type( MovementType::MPEGMolecules )
+    , movement_type( MovementMethod::MPEGMolecules )
 {
 	this->grid = vector<vector<Slot>>( X, vector<Slot>( Y ) );
 }
@@ -93,7 +93,7 @@ void Arena::makeBond( size_t a, size_t b, Neighborhood range ) {
             break;
         case AllGroups:
             //  we need to find all the subgraphs created by this new bond
-            if( this->movement_type == MovementType::AllGroups )
+            if( this->movement_type == MovementMethod::AllGroups )
 	            addAllGroupsForNewBond( a, b );
             // if a and b are rigidly bonded then we don't need to check their groups separately
             if( range == Neighborhood::vonNeumann )
